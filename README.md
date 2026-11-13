@@ -34,7 +34,7 @@ Initial load: **298,410 fact rows, 93 airlines, 704 airports, 19,252 directional
 - QSI proxy share = score / sum of route-month scores.
 - Gap (pp) = 100 × (passenger share − QSI proxy share).
 
-The QSI formula is an explicit portfolio assumption, **not a calibrated commercial itinerary QSI model**. It excludes time-of-day, fares, loyalty, connections and brand preferences. T-100 measures nonstop segments, not itinerary O&D demand. Missing/zero schedule coverage can make the benchmark unavailable. Eleven airline-route-month observations report passengers above seats; they are retained and flagged rather than silently corrected.
+The QSI formula is an explicit portfolio assumption, **not a calibrated commercial itinerary QSI model**. Frequency enters linearly; average aircraft size enters through a square root. The 150-seat reference cancels when scores are converted to shares within a route-month. It excludes time-of-day, fares, loyalty, connections and brand preferences. T-100 measures nonstop segments, not itinerary O&D demand. Missing/zero schedule coverage can make the benchmark unavailable. Eleven airline-route-month observations report passengers above seats; they are retained and flagged rather than silently corrected. See the [full QSI methodology and worked example](docs/qsi-methodology.md).
 
 ## Run locally
 Python 3.12+:

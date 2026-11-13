@@ -9,6 +9,7 @@ Flightpath is a public portfolio dashboard for US nonstop airline market share. 
 3. [Architecture and operations](architecture.md): data flow, database, storage, refresh, and recovery.
 4. [Design and airline marks](design-and-marks.md): visual direction, airline colors, PNG mark provenance, and limitations.
 5. [Delivery plan](project-plan.md): delivered work and remaining editorial work.
+6. [QSI methodology](qsi-methodology.md): formula, worked example, interpretation, and missing-value rules.
 
 ## Current published baseline
 

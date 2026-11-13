@@ -22,7 +22,7 @@ Filter service CLASS=F (scheduled passenger/cargo service), AIRCRAFT_CONFIG=1 (p
 
 Use AIRLINE_ID as reporting-airline key and airport IDs for stable airport/route keys. The dimensional labels describe the latest observed name in these exports; they are not a slowly changing historical name model. Operators such as SkyWest remain separate from the airlines that market some of their flights.
 
-QSI requires schedule quality assumptions. This project uses a documented, uncalibrated nonstop proxy based on scheduled frequency and aircraft gauge. No departure-time or connection-quality data is present. Eleven aggregate observations report passengers above seats; these are source-quality flags, not corrections. Some route-months have no usable scheduled departures and their QSI share is null.
+QSI requires schedule quality assumptions. This project uses a documented, uncalibrated nonstop proxy based on scheduled frequency and aircraft gauge; see the [full formula, worked example, and interpretation](qsi-methodology.md). No departure-time or connection-quality data is present. Eleven aggregate observations report passengers above seats; these are source-quality flags, not corrections. Some route-months have no usable scheduled departures and their QSI share is null.
 
 ## Revisions and limits
 BTS can revise historical periods; weekly refreshes re-download both years. Whole-year and year-to-date comparisons must align periods. T-100 reports actual nonstop segment traffic, including passengers connecting elsewhere; it is not complete itinerary demand, revenue, fare, or profitability data.
