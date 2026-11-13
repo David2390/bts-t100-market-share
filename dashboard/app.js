@@ -5,13 +5,6 @@ const KEY='sb_publishable_GkulMqSzrZowvuWBXhSvOA_eBB0t_OI';
 const $=id=>document.getElementById(id), number=new Intl.NumberFormat('en-US');
 const fmt=n=>number.format(Math.round(Number(n))), pct=n=>n==null?'N/A':(100*Number(n)).toFixed(1)+'%';
 const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const brandFor=code=>AIRLINE_BRANDS[String(code)]||{color:'#46536A',kind:'operator badge'};
-const brandStyle=code=>`--airline:${brandFor(code).color}`;
-function operatorMark(row){
- const code=String(row.airline_code),kind=brandFor(code).kind;
- const description=kind==='logo'?`${row.airline_name} logo`:`${code} operator badge`;
- return `<img class="operator-mark" src="assets/airlines/${encodeURIComponent(code)}.png" alt="${escapeHtml(description)}" loading="lazy">`;
-}
 let routes=[], current=[], requestId=0, routeRequest=0;
 async function api(view,params){
  const u=new URL(BASE+view);Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
@@ -48,11 +41,10 @@ async function showRoute(){
   $('route-title').textContent=summary.route_label;
   $('route-cities').textContent=summary.origin_city+' / '+summary.destination_city;
   $('report-period').textContent=$('period').selectedOptions[0].textContent;
-  $('lineup').innerHTML=rows.slice(0,5).map(r=>`<div class="carrier-card" style="${brandStyle(r.airline_code)}"><div class="carrier-card-main">${operatorMark(r)}<div class="carrier-card-name">${escapeHtml(r.airline_code)}<small>${escapeHtml(r.airline_name)}</small></div></div><div></div><div class="carrier-card-value">${pct(r.passenger_share)}<span>PASSENGER SHARE</span></div></div>`).join('');
   $('pax').textContent=fmt(summary.passengers);$('seats').textContent=fmt(summary.seats);
   $('lf').textContent=pct(summary.load_factor);$('operators').textContent=summary.airlines;
   $('departures').textContent=fmt(summary.departures)+' operated departures';
-  $('share-chart').innerHTML=rows.map(r=>`<div class="bar-row" style="${brandStyle(r.airline_code)}"><div class="bar-name">${operatorMark(r)}<span>${escapeHtml(r.airline_code)}<small>${escapeHtml(r.airline_name)}</small></span></div><div><div class="bar-line"><div class="bar" style="width:${Math.max(0,Math.min(100,100*r.passenger_share))}%"></div><span class="bar-value">${pct(r.passenger_share)}</span></div><div class="bar-line"><div class="bar proxy" style="width:${Math.max(0,Math.min(100,100*(r.qsi_share??0)))}%"></div><span class="bar-value">${pct(r.qsi_share)}</span></div></div></div>`).join('');
+  $('share-chart').innerHTML=rows.map(r=>`<div class="bar-row"><div class="bar-name">${escapeHtml(r.airline_code)}<small>${escapeHtml(r.airline_name)}</small></div><div><div class="bar-line"><div class="bar" style="width:${Math.max(0,Math.min(100,100*r.passenger_share))}%"></div><span class="bar-value">${pct(r.passenger_share)}</span></div><div class="bar-line"><div class="bar proxy" style="width:${Math.max(0,Math.min(100,100*(r.qsi_share??0)))}%"></div><span class="bar-value">${pct(r.qsi_share)}</span></div></div></div>`).join('');
   const available=rows.filter(r=>r.share_gap_pp!=null&&r.scheduled_departures>0);
   const lead=available.reduce((best,r)=>!best||Math.abs(r.share_gap_pp)>Math.abs(best.share_gap_pp)?r:best,null);
   if(lead){
@@ -60,7 +52,7 @@ async function showRoute(){
    $('signal-text').textContent=lead.airline_name+' carries '+pct(lead.passenger_share)+' of passengers, against a '+pct(lead.qsi_share)+' QSI proxy share. This is the largest absolute gap among operators with reported scheduled departures.';
    $('signal-gap').textContent=(lead.share_gap_pp>=0?'+':'')+lead.share_gap_pp.toFixed(1)+' pp';
   }else{$('signal-title').textContent='Schedule benchmark unavailable.';$('signal-text').textContent='Scheduled departure data is insufficient for this route. Passenger shares remain available.';$('signal-gap').textContent='N/A';}
-  $('airlines').innerHTML=rows.map(r=>`<tr style="${brandStyle(r.airline_code)}"><td><div class="table-airline">${operatorMark(r)}<span><strong>${escapeHtml(r.airline_code)}</strong><small>${escapeHtml(r.airline_name)}</small></span></div></td><td>${fmt(r.passengers)}</td><td>${pct(r.passenger_share)}</td><td>${pct(r.qsi_share)}</td><td class="${r.share_gap_pp>=0?'positive':'negative'}">${r.share_gap_pp==null?'N/A':(r.share_gap_pp>=0?'+':'')+r.share_gap_pp.toFixed(1)}</td><td>${pct(r.load_factor)}</td></tr>`).join('');
+  $('airlines').innerHTML=rows.map(r=>`<tr><td>${escapeHtml(r.airline_code)}<small>${escapeHtml(r.airline_name)}</small></td><td>${fmt(r.passengers)}</td><td>${pct(r.passenger_share)}</td><td>${pct(r.qsi_share)}</td><td class="${r.share_gap_pp>=0?'positive':'negative'}">${r.share_gap_pp==null?'N/A':(r.share_gap_pp>=0?'+':'')+r.share_gap_pp.toFixed(1)}</td><td>${pct(r.load_factor)}</td></tr>`).join('');
   const anomalies=rows.filter(r=>r.passengers>r.seats).length;
   $('quality-note').textContent=(anomalies?'Source warning: '+anomalies+' operator observation(s) report passengers above available seats. Values are retained, not corrected. ':'')+'QSI is an uncalibrated proxy. A zero reported schedule may yield a zero score; an all-zero route schedule yields N/A. Regional operators are shown separately.';
   const maximum=Math.max(...trend.map(r=>r.passengers),1);

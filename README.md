@@ -61,4 +61,4 @@ The initial raw CSV content totals approximately 212 MB; the corresponding bronz
 - The entire database load is transactional. Failed loads preserve the previously published data. Refreshes do not require redeploying the dashboard.
 - GitHub Actions also retains compressed Parquet artifacts for 30 days. The workflow uploads a versioned private Supabase Storage snapshot before updating the report, retaining the current and previous snapshots. Storage credentials are held in the SUPABASE_S3_ACCESS_KEY_ID and SUPABASE_S3_SECRET_ACCESS_KEY Actions secrets.
 
-See [architecture and operations](docs/architecture.md), the [data source](docs/data-source.md), and the [dashboard visual system and airline mark provenance](docs/design-and-marks.md).
+See [architecture and operations](docs/architecture.md) and the [data source](docs/data-source.md).
