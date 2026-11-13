@@ -8,3 +8,33 @@ main{max-width:1380px;padding:0 5%;margin:auto}.hero{display:grid;grid-template-
 .signal{display:flex;flex-direction:column;background:#fff6f5;border-color:#ffd5d0;border-top:4px solid var(--red)}.signal h3{font-size:32px;line-height:1.08;margin:17px 0}.signal p{color:#4c5159;font-size:11px;line-height:1.8}.signal-number{margin:10px 0 24px;font:400 71px/.9 'Bebas Neue',Impact,sans-serif;color:var(--red)}.signal .fine{margin-top:auto}.fine{font-size:10px;color:var(--muted);line-height:1.75}.text-button{background:transparent;min-height:30px;padding:5px;color:var(--red)}.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;white-space:nowrap;margin:12px 0}th{text-align:right;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:12px 9px;border-bottom:1px solid var(--line)}td{text-align:right;font-size:11px;padding:11px 9px;border-bottom:1px solid #edf0f2}td:first-child,th:first-child{text-align:left}.table-airline{display:flex;align-items:center;gap:9px}.table-airline strong{color:var(--airline)}td small{display:block;color:var(--muted);font-size:9px;margin-top:4px}.positive{color:#08735b;font-weight:700}.negative{color:#ba392e;font-weight:700}.trend-bars{display:flex;align-items:end;height:164px;gap:8px;padding:17px 0 0}.trend-item{height:100%;flex:1;min-width:12px;display:flex;flex-direction:column;justify-content:end;align-items:center}.trend-bar{width:100%;max-width:40px;min-height:1px;border-radius:3px 3px 0 0;background:#c5d0e9}.trend-item.latest .trend-bar{background:var(--red)}.trend-item span{font-size:8px;color:var(--muted);margin-top:8px;writing-mode:vertical-rl;transform:rotate(180deg)}
 #method{padding:29px 0 0}.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:34px;padding:14px 0 27px}.method-no{font:400 37px 'Bebas Neue',Impact,sans-serif;color:var(--red)}.method-grid h3{font-size:14px;margin:13px 0 10px}.method-grid p{font-size:11px;line-height:1.85;color:var(--muted)}.method-grid a{font-size:10px;color:var(--red);font-weight:800;text-decoration:none}.callout{border-left:4px solid var(--red);background:var(--wash);padding:19px 23px;font-size:11px;line-height:1.8;color:#505966}footer{border-top:1px solid var(--line);padding:26px 0 37px;display:flex;justify-content:space-between;gap:15px;font-size:10px;color:var(--muted)}
 @media(min-width:1500px){main{padding:0 35px}}@media(max-width:1100px){.filters{grid-template-columns:1fr 1fr}.lineup{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:1fr 265px}.charts{grid-template-columns:1fr}}@media(max-width:720px){header{padding:14px 5%}.live{display:none}nav{gap:13px}nav a{font-size:10px}nav a:first-child,nav a:nth-child(2){display:none}.hero{grid-template-columns:1fr;gap:25px;padding:42px 0 35px}h1{font-size:clamp(54px,12vw,83px)}.coverage{padding:18px}.filters{grid-template-columns:1fr}.lineup{grid-template-columns:repeat(2,1fr)}.metrics{grid-template-columns:repeat(2,1fr)}.bar-row{grid-template-columns:130px 1fr;gap:8px}.bar-name small{max-width:78px}.method-grid{grid-template-columns:1fr;gap:12px}.section-label>span{display:none}.route-heading h2{font-size:41px}.trend-bars{gap:4px}footer{display:block;line-height:2}}@media(max-width:420px){.carrier-card .operator-mark{width:42px;height:42px}.carrier-card{padding:10px}.carrier-card-name{font-size:10px}.panel{padding:17px}.bar-row{grid-template-columns:100px 1fr}.bar-name .operator-mark{width:23px;height:23px}}
+
+/* Multi-period comparison: searchable selectors, group KPIs, airline identities. */
+.compare-filters{grid-template-columns:minmax(170px,.75fr) minmax(235px,1fr) minmax(280px,1.5fr) auto;align-items:start;gap:16px}
+.compare-field{min-width:0;display:flex;flex-direction:column;gap:8px}
+.compare-field>label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:800;color:#505966;min-height:18px}
+.compare-field>small{font-size:10px;color:var(--muted);line-height:1.5}
+.compare-field input[type=search]{min-height:40px}
+.compare-field select[multiple]{min-height:185px;height:185px;padding:6px 8px;font-size:12px}
+.compare-field select[multiple] option{padding:4px}
+.compare-count{font-size:9px;font-weight:800;color:#9b2320;border:1px solid #f6c6c2;background:#fff4f3;border-radius:20px;padding:4px 7px;white-space:nowrap}
+.compare-direction>select{margin-bottom:0}
+.compare-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.compare-actions .compare-small-button{background:#fff;border:1px solid #d7dae0;color:#505966;min-height:31px;padding:6px 10px;font-size:10px}
+.compare-actions .compare-small-button.accent{color:#a32220;border-color:#edada8}
+.compare-submit{display:flex;align-items:flex-start;padding-top:27px}
+.compare-submit>button{width:100%;white-space:nowrap}
+#compare-status{min-height:42px;padding:12px 2px;color:var(--muted);font-size:11px}
+#compare-status.error{color:#a22d28}
+.compare-subheading{margin-top:10px;border-color:var(--line)}
+.compare-total-metrics{margin-top:0}
+.compare-grand-total td{font-weight:800;background:#fff6f5;border-top:2px solid var(--red)}
+.compare-share{display:flex;justify-content:flex-end;align-items:center;gap:12px;min-width:140px}
+.compare-share strong{min-width:46px;text-align:right}
+.compare-share-meter{width:min(120px,40%);height:8px;border-radius:7px;background:#f0f2f4;overflow:hidden}
+.compare-share-meter span{height:100%;display:block;background:var(--airline);border-radius:7px}
+#compare-group-airlines td:first-child,#compare-airlines td:nth-child(2){text-align:left}
+#compare-group-airlines .operator-mark,#compare-airlines .operator-mark{width:33px;height:33px}
+#compare-group-airlines .table-airline strong,#compare-airlines .table-airline strong{font-size:12px}
+@media(max-width:1100px){.compare-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.compare-submit{padding-top:0}}
+@media(max-width:720px){.compare-filters{grid-template-columns:1fr}.compare-field select[multiple]{height:170px;min-height:170px}.compare-submit>button{width:100%}.compare-share{min-width:110px;gap:7px}.compare-total-metrics strong{font-size:32px}}
