@@ -120,7 +120,7 @@ async function runComparison(){
    const total=(k)=>d.monthly.reduce((n,r)=>n+Number(r[k]||0),0);
    return {...d,pax:total('passengers'),seats:total('seats'),departures:total('departures'),label:both?(()=>{const t=d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key;return t.replace(' → ',' ↔ ');})():d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key};
   });
-  $('compare-summary').innerHTML=sums.map(d=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+fmt(d.pax)+'</td><td>'+fmt(d.seats)+'</td><td>'+fmt(d.departures)+'</td><td>'+(d.seats?pct(d.pax/d.seats):'N/A')+'</td><td>'+d.monthly.length+'</td></tr>').join('');
+  $('compare-summary').innerHTML=sums.map(d=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+fmt(d.pax)+'</td><td>'+fmt(d.seats)+'</td><td>'+fmt(d.departures)+'</td><td>'+(d.seats?pct(d.pax/d.seats):'N/A')+'</td><td>'+new Set(d.monthly.map(r=>String(r.date_key))).size+'</td></tr>').join('');
   const monthSorted=[...months].sort();
   $('compare-trend').innerHTML='<table><thead><tr><th>Departure month</th>'+sums.map(d=>'<th>'+escapeHtml(d.label)+'</th>').join('')+'</tr></thead><tbody>'+monthSorted.map(m=>'<tr><td>'+m.slice(0,4)+'-'+m.slice(4,6)+'</td>'+sums.map(d=>'<td>'+fmt(d.monthly.filter(r=>String(r.date_key)===m).reduce((n,r)=>n+Number(r.passengers||0),0))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
   $('compare-airlines').innerHTML=sums.flatMap(d=>{
