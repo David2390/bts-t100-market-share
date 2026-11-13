@@ -1,56 +1,62 @@
-# US Airline Market Share & Capacity Analysis
+# Flightpath — US Aviation Intelligence
 
-A portfolio project using real, publicly available BTS T-100 Domestic Segment (All Carriers) data.
+A real-data aviation portfolio project: **2025 full year and January–August 2026**, the latest periods verified in the downloaded BTS T-100 Domestic Segment data. Reporting coverage updates when new exports are loaded.
 
-**Business question:** Which airlines carry more or fewer passengers than their capacity share on a given nonstop route?
+Compare passenger market share with a transparent, uncalibrated **nonstop QSI proxy**, then explore results in a Vercel dashboard. All transformations and share calculations run in Python.
 
-## Project description
-This project explores airline competition in the US domestic market using publicly available BTS T-100 traffic data. It compares the passengers each airline transports with the seats and departures it operates on individual routes, helping identify where traffic share is above or below capacity share.
+## Architecture
+```mermaid
+flowchart LR
+ BTS[Official BTS annual exports] --> PY[Python validation and transformation]
+ PY --> PQ[Zstandard Parquet]
+ PQ --> STORE[Supabase private object storage]
+ PQ --> DB[Supabase PostgreSQL star schema]
+ DB --> VIEWS[Read-only reporting views]
+ VIEWS --> WEB[Vercel dashboard]
+ GH[GitHub Actions: weekly] --> PY
+```
 
-The goal is to turn raw aviation records into a reproducible analysis that supports commercial questions: Which routes are most competitive? How does airline performance change through the year? Where do passenger share and capacity share diverge?
+## Data model
+- `fact_market_monthly`: month × directional airport pair × reporting airline; passengers, seats, operated and scheduled departures, Python-computed shares, QSI score and load factor.
+- `dim_airline`, `dim_airport`, `dim_route`, `dim_date`.
+- `report_route_monthly`: Python-computed route totals used by the dashboard.
+- `pipeline_status`: source provenance, quality results and refresh timestamp.
 
-The planned deliverables are a validated market-share dataset, route-level visualizations, and a concise commercial brief. The local analysis script uses the Python standard library; the scheduled database loader uses Psycopg. This repository documents the process from source acquisition and metric definitions through analysis and interpretation.
+Initial load: **298,410 fact rows, 93 airlines, 704 airports, 19,252 directional routes, 20 reporting months**. These are reporting operators, not consolidated airline brands.
 
-## Platform
-Data lives in Supabase PostgreSQL. Python scripts and weekly GitHub Actions workflows live in this repository. The report will be hosted on Vercel. See [architecture and activation steps](docs/architecture.md).
-
-## Scope
-- Initial period: January–December 2025, subject to source completeness checks.
-- Market: directional airport pair (JFK–LAX differs from LAX–JFK).
-- Grain: month × origin × destination × reporting airline.
-- Scheduled passenger service only (service class F).
-- Carrier results describe reporting operators, not consolidated marketing brands.
-
-## Metrics
-- Passenger share = airline passengers / all included airline passengers in the market-month.
-- Seat share = airline seats / all included airline seats in the market-month.
-- Departure share = airline performed departures / market-month performed departures.
+## Measures
+- Passenger share = airline passengers / all included route-month passengers.
+- Seat share and departure share use the corresponding full-market denominator.
 - Load factor = passengers / seats.
-- Share gap (percentage points) = 100 × (passenger share − seat share).
+- QSI proxy score = scheduled departures per day × √(average aircraft seats / 150).
+- QSI proxy share = score / sum of route-month scores.
+- Gap (pp) = 100 × (passenger share − QSI proxy share).
 
-These capacity and frequency benchmarks are not a full QSI model. T-100 is segment traffic, not passenger itinerary O&D demand. A positive gap is descriptive and does not establish profitability or causation.
+The QSI formula is an explicit portfolio assumption, **not a calibrated commercial itinerary QSI model**. It excludes time-of-day, fares, loyalty, connections and brand preferences. T-100 measures nonstop segments, not itinerary O&D demand. Missing/zero schedule coverage can make the benchmark unavailable. Eleven airline-route-month observations report passengers above seats; they are retained and flagged rather than silently corrected.
 
-## Run
-1. Follow [data acquisition](docs/data-source.md). Download one complete 2025 export with all carriers and routes; extract the CSV into `data/raw/`.
-2. Install Python 3.10+ (the pipeline uses only the standard library).
-3. From this folder, run:
-
+## Run locally
+Python 3.12+:
 ```powershell
-python src/analyze.py --input "data/raw/YOUR_BTS_FILE.csv" --output data/processed/market_share.csv
+python -m pip install -r requirements.txt
+python src/download_bts.py
+python src/build_model.py
+# Set DATABASE_URL securely in your environment, then:
+python src/load_model.py
+python -m http.server 8765 --directory dashboard
 ```
+The downloader submits the official BTS export form; no hand-maintained temporary download link is needed. The model requires all 2025 months and contiguous published 2026 months.
 
-The script aggregates aircraft-level source rows before computing shares. It rejects missing fields, invalid periods and negative measures. Do not filter competitors out before computing market totals. Do not combine overlapping exports.
+## Storage
+Untouched downloads stay outside Git. Raw and modeled data are stored as Zstandard-compressed Parquet in the private `aviation-parquet` Supabase Storage bucket. PostgreSQL holds queryable relational tables; PostgreSQL does not store those tables internally as Parquet.
 
-## Structure
-```text
-data/raw/          Untouched source downloads (excluded from Git)
-data/interim/      Optional intermediate transformations
-data/processed/    Derived market-share tables (excluded from Git)
-docs/              Source, definitions and project plan
-notebooks/         Future exploratory notebooks
-src/               Reproducible analysis code
-reports/figures/   Charts and final findings
-```
+The initial raw CSV content totals approximately 212 MB; the corresponding bronze Parquet files total approximately 23.5 MB (about 89% less). All eight Parquet files, including modeled reporting data, total approximately 43.1 MB. See [quality/provenance report](reports/data-quality.json).
 
-## Current status
-Supabase reporting schema is provisioned and the weekly GitHub Actions workflow is prepared, gated off pending configuration. The Vercel dashboard is not yet built. Real data has not yet been downloaded or analyzed; no findings are claimed. See [project plan](docs/project-plan.md).
+## Deployment and refresh
+- Vercel account/team: `davidemendez14-3404`.
+- Vercel builds this repository using `vercel.json`; the static dashboard reads public, SELECT-only Supabase reporting views with a publishable client key.
+- GitHub Actions runs Mondays at 10:17 UTC / 06:17 Bolivia time, plus manual dispatch. `REFRESH_ENABLED=true` activates the job.
+- `DATABASE_URL` belongs in GitHub Actions Secrets, never source code. The dedicated `aviation_loader` login has access only to this project's reporting schema.
+- The entire database load is transactional. Failed loads preserve the previously published data. Refreshes do not require redeploying the dashboard.
+- GitHub Actions also retains compressed Parquet artifacts for 30 days. Initial Supabase Storage upload is complete; unattended bucket updates require storage credentials to be configured.
+
+See [architecture and operations](docs/architecture.md) and the [data source](docs/data-source.md).

@@ -1,8 +1,7 @@
 name: Weekly BTS refresh
 on:
   schedule:
-    # Monday 10:17 UTC = Monday 06:17 America/La_Paz.
-    - cron: '17 10 * * 1'
+    - cron: '17 10 * * 1' # Monday 06:17 America/La_Paz
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,7 +12,7 @@ jobs:
   refresh:
     if: vars.REFRESH_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,16 +20,20 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: python -m pip install -r requirements.txt
-      - name: Check configuration
+      - name: Download published 2025 and 2026 exports
+        run: python src/download_bts.py
+      - name: Validate and transform to Parquet and star schema
+        run: python src/build_model.py
+      - name: Publish validated reporting model atomically
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          BTS_SOURCE_URL: ${{ vars.BTS_SOURCE_URL }}
-        run: |
-          test -n "$DATABASE_URL" || { echo 'Missing DATABASE_URL secret'; exit 1; }
-          test -n "$BTS_SOURCE_URL" || { echo 'Missing BTS_SOURCE_URL variable'; exit 1; }
-      - name: Refresh Supabase traffic and report view
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          BTS_SOURCE_URL: ${{ vars.BTS_SOURCE_URL }}
-          BTS_SOURCE_YEAR: ${{ vars.BTS_SOURCE_YEAR || '2025' }}
-        run: python src/refresh.py
+        run: python src/load_model.py
+      - name: Retain compressed datasets and quality report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bts-parquet-${{ github.run_id }}
+          path: |
+            data/parquet/
+            reports/data-quality.json
+          retention-days: 30

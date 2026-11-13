@@ -1,46 +1,29 @@
 # Architecture and operations
 
-## Agreed stack
-- Database: a dedicated Supabase PostgreSQL project, bts-t100-market-share.
-- Source control: David2390/bts-t100-market-share, including every Python script and workflow.
-- Scheduler: GitHub Actions, weekly on Monday at 06:17 America/La_Paz (10:17 UTC). Scheduled execution can be delayed by GitHub.
-- Report: a Vercel-hosted dashboard (not yet implemented or deployed).
+The source of truth for requirements and model definitions is the repository README.
 
-```mermaid
-flowchart LR
-  BTS[Open BTS T-100 annual export] --> GA[GitHub Actions: Python refresh]
-  GA --> PG[Supabase PostgreSQL]
-  PG --> API[Vercel server-side read-only queries]
-  API --> UI[Dashboard]
-```
+## Services
+- GitHub: https://github.com/David2390/bts-t100-market-share
+- Supabase project: https://supabase.com/dashboard/project/zlzkijtsyrlisfjydnln
+- Vercel team: davidemendez14-3404 (Hobby)
 
-## Database
-Project ID: zlzkijtsyrlisfjydnln. Region: us-east-1.
-Dashboard: https://supabase.com/dashboard/project/zlzkijtsyrlisfjydnln
+## Storage and transformation
+The official BTS download form is submitted for 2025 and 2026 by src/download_bts.py. src/build_model.py validates yearly/monthly coverage, filters passenger service, constructs dimensions, aggregates the fact grain, calculates shares and the QSI proxy, and writes Zstandard Parquet. Bronze files preserve every downloaded source column and row. Gold files contain the modeled tables and route report. No dummy records are used.
 
-The private aviation schema stores normalized monthly traffic, successful load metadata and an always-current market_share view. RLS is enabled; no anonymous/browser access is granted. The dashboard should query through a Vercel server endpoint using a dedicated read-only database login. Never send a writer connection string to a browser.
+Raw ZIP and Parquet files are excluded from Git. The private Supabase Storage bucket aviation-parquet contains the initial eight Parquet files. PostgreSQL tables live in the aviation schema. Public reporting views use security_invoker and SELECT-only RLS policies for the public aviation data. No browser role can write tables or list the private bucket.
 
-The source ZIP is downloaded temporarily, hashed and aggregated. Original source rows are not retained in PostgreSQL; the source URL and checksum provide provenance. The current loader requires a complete annual export. It does not yet discover new releases, ingest a partial current year, or automatically roll over to the next year.
+## Database loading
+src/load_model.py copies Parquet into temporary staging tables, upserts dimensions and replaces the two source years inside one transaction protected by an advisory lock. Failure preserves the previous published model. pipeline_status records the metadata and successful-load timestamp in the same transaction.
 
-## GitHub configuration still needed
-Repository Settings → Secrets and variables → Actions:
+The dedicated aviation_loader login has SELECT/INSERT/UPDATE/DELETE grants and matching RLS policies on the reporting model, not project-admin privileges. Its connection string belongs only in the DATABASE_URL GitHub Actions secret. Use a reachable session pooler if an execution environment lacks IPv6; direct connectivity was verified during the initial load. Never commit a password.
 
-| Type | Name | Value |
-|---|---|---|
-| Secret | DATABASE_URL | Supabase connection string with a database writer login; use the session pooler on IPv4 runners |
-| Variable | BTS_SOURCE_URL | Verified public HTTPS TranStats CSV or single-CSV ZIP download URL, all domestic markets/carriers for the configured year |
-| Variable | BTS_SOURCE_YEAR | 2025 initially |
-| Variable | REFRESH_ENABLED | true, only after a successful manual validation run |
+## Refresh
+.github/workflows/refresh.yml runs Mondays at 10:17 UTC (06:17 America/La_Paz) and supports manual dispatch. Set repository variable REFRESH_ENABLED=true after configuring secrets. GitHub may delay scheduled execution, and may disable inactive public-repository schedules. The workflow re-downloads both years so source revisions are captured. Published 2026 months must be contiguous from January; it does not assume the calendar month has been released.
 
-Use a dedicated loader login with USAGE on aviation, SELECT/INSERT/DELETE on monthly_traffic, INSERT on refresh_runs and sequence privileges. For RLS, define policies only for that dedicated role; leave browser roles ungranted. Owner credentials can bootstrap a manual test but should not be the long-term scheduled credential.
+GitHub Actions retains the Parquet dataset and quality report as 30-day artifacts. Supabase bucket uploads are initially complete; unattended storage synchronization is being configured separately from relational loading.
 
-The workflow is committed but gated off until REFRESH_ENABLED is true. Configure the source URL and secret, set the gate true, then use Actions → Weekly BTS refresh → Run workflow. Verify data and run metadata after that manual run. A database update does not deploy the dashboard; Vercel should read the latest view at request time, with explicit short cache lifetime or no cache.
+## Dashboard
+The buildless dashboard reads the latest reporting views at request time with cache:no-store. Its client key is a publishable Supabase key, not a database or service-role secret. A data refresh therefore requires no Vercel rebuild. Source-code pushes deploy through the Vercel Git integration. The dashboard reports monthly market shares, avoiding misleading comparisons of full-year 2025 with partial-year 2026.
 
-## Reliability
-Downloads and validation finish before writes begin. A transaction and advisory lock serialize loads; replacement is scoped to the configured year and removes revised-away rows. All twelve months must be present. Failed transactions preserve prior data. Successful runs record a checksum, count and completion time. Failed runs appear in GitHub Actions; no fabricated data is substituted.
-
-## Pending
-- Verify and configure the automated BTS source URL.
-- Configure the GitHub database secret and dedicated loader role.
-- Execute and reconcile the first real-data refresh.
-- Build the Vercel dashboard, read-only database role, filters and last-refreshed indicator.
+## Recovery
+If downloading, validation or loading fails, inspect the GitHub Actions run and retain the last valid report. Do not substitute synthetic data. The initial source checksums and row counts are in reports/data-quality.json. Rebuild from original exports to reproduce the measures.

@@ -1,0 +1,60 @@
+{
+  "sources": [
+    {
+      "year": 2025,
+      "rows": 458768,
+      "months": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "csv_bytes": 127158607,
+      "zip_bytes": 14537524,
+      "sha256": "50f9e7948fd6645f8b2ca24e917a5a4406179605dd6ffc7e9a8c1bda6e057095",
+      "bronze_parquet_bytes": 13967824
+    },
+    {
+      "year": 2026,
+      "rows": 307438,
+      "months": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "csv_bytes": 85293064,
+      "zip_bytes": 9980502,
+      "sha256": "7148fadc2b39ee54c97ab5c29bba8cecc938b8d34af2b1aaa1fef503405c3026",
+      "bronze_parquet_bytes": 9550314
+    }
+  ],
+  "fact_rows": 298410,
+  "airlines": 93,
+  "routes": 19252,
+  "airports": 704,
+  "latest_period": "2026-08",
+  "checks": {
+    "passenger_share_max_sum_error": 2.220446049250313e-16,
+    "seat_share_max_sum_error": 2.220446049250313e-16,
+    "departure_share_max_sum_error": 2.220446049250313e-16,
+    "qsi_share_max_sum_error": 2.220446049250313e-16
+  },
+  "passengers_above_seats_rows": 11,
+  "qsi_unavailable_rows": 11901,
+  "excluded_source_rows": 179389,
+  "qsi_formula": "scheduled_departures / days_in_month * sqrt(avg_aircraft_seats / 150)",
+  "qsi_note": "Uncalibrated nonstop schedule-and-gauge proxy; not a commercial itinerary QSI model."
+}

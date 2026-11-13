@@ -1,33 +1,28 @@
-# Source and acquisition
+# Source, coverage and provenance
 
-Publisher: US Department of Transportation, Bureau of Transportation Statistics (BTS).
+Publisher: US Department of Transportation, Bureau of Transportation Statistics.
 Dataset: T-100 Domestic Segment (All Carriers).
-Official download: https://www.transtats.bts.gov/DL_SelectFields.aspx?QO_fu146_anzr=Nv4+Pn44vr45&gnoyr_VQ=GEE
+Official export form: https://www.transtats.bts.gov/DL_SelectFields.aspx?QO_fu146_anzr=Nv4+Pn44vr45&gnoyr_VQ=GEE
 
-Select 2025, all months and all domestic geography. Include all airlines so market denominators retain competitors. Export these fields (or select all fields):
+The downloader submits All geography, All months, each source year, and all dataset fields. It preserves ASP.NET form tokens and cookies. It checks that the response is a valid ZIP with one CSV before transformation.
 
-| BTS label | Common CSV header | Purpose |
-|---|---|---|
-| Year | YEAR | Period |
-| Month | MONTH | Period |
-| AirlineID | AIRLINE_ID | Stable reporting-airline identifier |
-| UniqueCarrierName | UNIQUE_CARRIER_NAME | Optional display name |
-| Origin | ORIGIN | Origin airport |
-| Dest | DEST | Destination airport |
-| Class | CLASS | Service class; pipeline retains F |
-| Passengers | PASSENGERS | Transported segment passengers |
-| Seats | SEATS | Available seats |
-| DepPerformed | DEPARTURES_PERFORMED | Operated departures |
+Initial verified downloads (November 12, 2026, Bolivia time):
 
-Extract a single CSV into data/raw/. Header spelling variants DepPerformed and AirlineID are also supported. No raw source rows are bundled with this repository.
+| Year | Source rows | Coverage | Raw CSV bytes | Bronze Parquet bytes |
+|---|---:|---|---:|---:|
+| 2025 | 458,768 | January–December | 127,158,607 | 13,967,824 |
+| 2026 | 307,438 | January–August | 85,293,064 | 9,550,314 |
 
-Record the actual download date, selected filters, filename, coverage and source revisions below when acquired. Keep the original ZIP outside Git. Check coverage of all 12 months and review airlines with missing or unexpected reporting.
+The live download form listed August 2026; the downloaded records confirmed months 1–8. Search-engine caches had older release information, so record-level coverage takes precedence. Up to date means latest published BTS records, not flights through today.
 
-## Acquisition log
-- Download date: pending
-- File: pending
-- Filters and period: pending
-- Row count and SHA-256: pending
+See reports/data-quality.json for source ZIP SHA-256 hashes, row counts and validation results.
 
-## Interpretation limits
-T-100 reports nonstop segments, including passengers who may connect elsewhere. Aircraft/service detail can produce multiple rows for one airline-route-month; sum those rows, do not treat them as duplicates. Do not merge airline operators into brands without a documented mapping. Monthly seats and departures do not describe departure-time convenience or connection quality.
+## Scope and exclusions
+Filter service CLASS=F (scheduled passenger/cargo service), AIRCRAFT_CONFIG=1 (passenger configuration), distinct origin/destination airport IDs, positive available seats and positive performed departures. Retain zero-passenger operated services. The excluded-source-row count covers all filters; it is not a count of invalid records.
+
+Use AIRLINE_ID as reporting-airline key and airport IDs for stable airport/route keys. The dimensional labels describe the latest observed name in these exports; they are not a slowly changing historical name model. Operators such as SkyWest remain separate from the airlines that market some of their flights.
+
+QSI requires schedule quality assumptions. This project uses a documented, uncalibrated nonstop proxy based on scheduled frequency and aircraft gauge. No departure-time or connection-quality data is present. Eleven aggregate observations report passengers above seats; these are source-quality flags, not corrections. Some route-months have no usable scheduled departures and their QSI share is null.
+
+## Revisions and limits
+BTS can revise historical periods; weekly refreshes re-download both years. Whole-year and year-to-date comparisons must align periods. T-100 reports actual nonstop segment traffic, including passengers connecting elsewhere; it is not complete itinerary demand, revenue, fare, or profitability data.
