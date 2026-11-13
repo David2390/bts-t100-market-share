@@ -98,34 +98,38 @@ function addCompareRoutes(rows){
 }
 function compareMessage(msg,err=false){$('compare-status').textContent=msg;$('compare-status').className=err?'error':'';}
 async function runComparison(){
- const months=compareSelected(comparePeriod),keys=compareSelected(compareRoutes);
+ const months=compareSelected(comparePeriod),keys=compareSelected(compareRoutes),both=$('compare-direction').value==='both';
  if(!months.length||!keys.length){compareMessage('Select at least one departure month and one directional route.',true);return;}
  if(months.length>12||keys.length>5){compareMessage('Limit comparisons to 12 months and 5 routes at a time.',true);return;}
  $('compare-run').disabled=true;$('compare-results').hidden=true;compareMessage('Loading selected departure-month observations…');
  try{
   const monthFilter='in.('+months.join(',')+')';
-  const data=await Promise.all(keys.map(async key=>{
+  const canonical=key=>key.split('-').sort((x,y)=>Number(x)-Number(y)).join('-');
+  const selectedKeys=both?[...new Set(keys.map(canonical))]:keys;
+  const data=await Promise.all(selectedKeys.map(async key=>{
+   const pair=key.split('-');const reverse=pair[1]+'-'+pair[0];
+   const routeFilter=both&&reverse!==key?'in.('+key+','+reverse+')':'eq.'+key;
    const [monthly,airlines]=await Promise.all([
-    api('aviation_routes',{select:'date_key,route_key,route_label,passengers,seats,departures',date_key:monthFilter,route_key:'eq.'+key,order:'date_key.asc',limit:'100'}),
-    api('aviation_market_share',{select:'date_key,route_key,airline_code,airline_name,passengers',date_key:monthFilter,route_key:'eq.'+key,limit:'1000'})
+    api('aviation_routes',{select:'date_key,route_key,route_label,passengers,seats,departures',date_key:monthFilter,route_key:routeFilter,order:'date_key.asc',limit:'100'}),
+    api('aviation_market_share',{select:'date_key,route_key,airline_code,airline_name,passengers',date_key:monthFilter,route_key:routeFilter,limit:'1000'})
    ]);
    if(airlines.length===1000)throw new Error('Comparison reached the reporting API row limit. Reduce the selected months.');
-   return {key,monthly,airlines};
+   return {key,monthly,airlines,both};
   }));
   const sums=data.map(d=>{
    const total=(k)=>d.monthly.reduce((n,r)=>n+Number(r[k]||0),0);
-   return {...d,pax:total('passengers'),seats:total('seats'),departures:total('departures'),label:d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key};
+   return {...d,pax:total('passengers'),seats:total('seats'),departures:total('departures'),label:both?(()=>{const t=d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key;return t.replace(' → ',' ↔ ');})():d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key};
   });
-  $('compare-summary').innerHTML=sums.map(d=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+fmt(d.pax)+'</td><td>'+fmt(d.seats)+'</td><td>'+fmt(d.departures)+'</td><td>'+(d.seats?pct(d.pax/d.seats):'N/A')+'</td><td>'+d.monthly.length+'</td></tr>').join('');
+  $('compare-summary').innerHTML=sums.map(d=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+fmt(d.pax)+'</td><td>'+fmt(d.seats)+'</td><td>'+fmt(d.departures)+'</td><td>'+(d.seats?pct(d.pax/d.seats):'N/A')+'</td><td>'+new Set(d.monthly.map(r=>String(r.date_key))).size+'</td></tr>').join('');
   const monthSorted=[...months].sort();
-  $('compare-trend').innerHTML='<table><thead><tr><th>Departure month</th>'+sums.map(d=>'<th>'+escapeHtml(d.label)+'</th>').join('')+'</tr></thead><tbody>'+monthSorted.map(m=>'<tr><td>'+m.slice(0,4)+'-'+m.slice(4,6)+'</td>'+sums.map(d=>'<td>'+fmt(d.monthly.find(r=>String(r.date_key)===m)?.passengers||0)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  $('compare-trend').innerHTML='<table><thead><tr><th>Departure month</th>'+sums.map(d=>'<th>'+escapeHtml(d.label)+'</th>').join('')+'</tr></thead><tbody>'+monthSorted.map(m=>'<tr><td>'+m.slice(0,4)+'-'+m.slice(4,6)+'</td>'+sums.map(d=>'<td>'+fmt(d.monthly.filter(r=>String(r.date_key)===m).reduce((n,r)=>n+Number(r.passengers||0),0))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
   $('compare-airlines').innerHTML=sums.flatMap(d=>{
    const byAirline=new Map();
    d.airlines.forEach(r=>{const k=r.airline_code;const prev=byAirline.get(k)||{name:r.airline_name,pax:0};prev.pax+=Number(r.passengers||0);byAirline.set(k,prev);});
    return [...byAirline.entries()].sort((x,y)=>y[1].pax-x[1].pax).map(([code,v])=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+escapeHtml(code)+' · '+escapeHtml(v.name)+'</td><td>'+fmt(v.pax)+'</td><td>'+(d.pax?pct(v.pax/d.pax):'N/A')+'</td></tr>');
   }).join('');
   $('compare-results').hidden=false;
-  compareMessage('Comparing '+keys.length+' directional route(s) across '+months.length+' selected departure month(s). Missing route-months are shown as zero in the trend; they are not inferred bookings.');
+  compareMessage('Comparing '+selectedKeys.length+' '+(both?'bidirectional route pair(s)':'directional route(s)')+' across '+months.length+' selected departure month(s). Missing route-months are shown as zero in the trend; they are not inferred bookings.');
  }catch(e){compareMessage(e.message,true);}finally{$('compare-run').disabled=false;}
 }
 $('compare-run').addEventListener('click',runComparison);
