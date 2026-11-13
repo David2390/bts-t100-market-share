@@ -9,7 +9,10 @@ This project explores airline competition in the US domestic market using public
 
 The goal is to turn raw aviation records into a reproducible analysis that supports commercial questions: Which routes are most competitive? How does airline performance change through the year? Where do passenger share and capacity share diverge?
 
-The planned deliverables are a validated market-share dataset, route-level visualizations, and a concise commercial brief. The initial pipeline uses Python with no external dependencies. This repository documents the process from source acquisition and metric definitions through analysis and interpretation.
+The planned deliverables are a validated market-share dataset, route-level visualizations, and a concise commercial brief. The local analysis script uses the Python standard library; the scheduled database loader uses Psycopg. This repository documents the process from source acquisition and metric definitions through analysis and interpretation.
+
+## Platform
+Data lives in Supabase PostgreSQL. Python scripts and weekly GitHub Actions workflows live in this repository. The report will be hosted on Vercel. See [architecture and activation steps](docs/architecture.md).
 
 ## Scope
 - Initial period: January–December 2025, subject to source completeness checks.
@@ -50,4 +53,4 @@ reports/figures/   Charts and final findings
 ```
 
 ## Current status
-Project scaffold and analysis pipeline prepared. Real data has not yet been downloaded or analyzed; no findings are claimed. See [project plan](docs/project-plan.md).
+Supabase reporting schema is provisioned and the weekly GitHub Actions workflow is prepared, gated off pending configuration. The Vercel dashboard is not yet built. Real data has not yet been downloaded or analyzed; no findings are claimed. See [project plan](docs/project-plan.md).
