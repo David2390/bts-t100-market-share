@@ -165,7 +165,7 @@ compareMonthSearch.addEventListener('input',renderCompareMonths);
 compareRouteSearch.addEventListener('input',renderCompareRoutes);
 comparePeriod.addEventListener('change',()=>compareSyncVisible(comparePeriod,selectedCompareMonths,renderCompareMonths));
 compareRoutes.addEventListener('change',()=>compareSyncVisible(compareRoutes,selectedCompareRoutes,renderCompareRoutes));
-$('compare-month-add').addEventListener('click',()=>compareAddVisible(comparePeriod,selectedCompareMonths,12,renderCompareMonths,'months'));
+$('compare-month-add').addEventListener('click',()=>compareAddVisible(comparePeriod,selectedCompareMonths,24,renderCompareMonths,'months'));
 $('compare-month-clear').addEventListener('click',()=>compareClear(selectedCompareMonths,renderCompareMonths,'months'));
 $('compare-route-add').addEventListener('click',()=>compareAddVisible(compareRoutes,selectedCompareRoutes,5,renderCompareRoutes,'routes'));
 $('compare-route-clear').addEventListener('click',()=>compareClear(selectedCompareRoutes,renderCompareRoutes,'routes'));
@@ -220,7 +220,7 @@ function compareMonthlyPax(route,month){
 async function runComparison(){
  const months=[...selectedCompareMonths],keys=[...selectedCompareRoutes],both=$('compare-direction').value==='both';
  if(!months.length||!keys.length){compareMessage('Select at least one departure month and one route.',true);return;}
- if(months.length>12||keys.length>5){compareMessage('Limit comparisons to 12 months and 5 routes.',true);return;}
+ if(months.length>24||keys.length>5){compareMessage('Limit comparisons to 24 months and 5 routes.',true);return;}
  const canonical=key=>key.split('-').sort((a,b)=>Number(a)-Number(b)).join('-');
  const routeKeys=both?[...new Set(keys.map(canonical))]:keys;
  const monthFilter='in.('+months.join(',')+')';
