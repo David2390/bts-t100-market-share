@@ -2,6 +2,8 @@
 
 A real-data aviation portfolio project: **2025 full year and January–August 2026**, the latest periods verified in the downloaded BTS T-100 Domestic Segment data. Reporting coverage updates when new exports are loaded.
 
+**[Explore the live Flightpath dashboard](https://bts-t100-market-share.vercel.app/)** · [Verified weekly refresh run](https://github.com/David2390/bts-t100-market-share/actions/runs/43356230918)
+
 Compare passenger market share with a transparent, uncalibrated **nonstop QSI proxy**, then explore results in a Vercel dashboard. All transformations and share calculations run in Python.
 
 ## Architecture
@@ -53,7 +55,7 @@ The initial raw CSV content totals approximately 212 MB; the corresponding bronz
 
 ## Deployment and refresh
 - Vercel account/team: `davidemendez14-3404`.
-- The static dashboard reads public, SELECT-only Supabase reporting views with a publishable client key. The initial Vercel deployment uses the `dashboard/` folder upload; connect this repository to Vercel for automatic site deployments when its GitHub integration is available.
+- The [static Vercel dashboard](https://bts-t100-market-share.vercel.app/) reads public, SELECT-only Supabase reporting views with a publishable client key. The initial deployment uses the `dashboard/` folder upload; connect this repository to Vercel for automatic site deployments when its GitHub integration is available.
 - GitHub Actions runs Mondays at 10:17 UTC / 06:17 Bolivia time, plus manual dispatch. `REFRESH_ENABLED=true` activates the job.
 - `DATABASE_URL` belongs in GitHub Actions Secrets, never source code. The dedicated `aviation_loader` login has access only to this project's reporting schema.
 - The entire database load is transactional. Failed loads preserve the previously published data. Refreshes do not require redeploying the dashboard.
