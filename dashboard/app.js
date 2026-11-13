@@ -29,7 +29,7 @@ async function findRoutes(){
   const q=$('search').value.replace(/[^a-zA-Z0-9 -]/g,'').trim().slice(0,40);
   if(q)params.or='(route_label.ilike.*'+q+'*,origin_city.ilike.*'+q+'*,destination_city.ilike.*'+q+'*)';
   const rows=await api('aviation_routes',params);if(id!==routeRequest)return;
-  routes=rows;$('route').replaceChildren(...rows.map(r=>option(r.route_key,r.route_label+' · '+fmt(r.passengers)+' pax')));
+  addCompareRoutes(rows);routes=rows;$('route').replaceChildren(...rows.map(r=>option(r.route_key,r.route_label+' · '+fmt(r.passengers)+' pax')));
   if(!rows.length){status('No routes found. Try a three-letter airport code such as JFK or LAX.');return;}
   $('route').disabled=false;await showRoute();
  }catch(e){if(id===routeRequest)status(e.message,true);}
@@ -81,6 +81,51 @@ $('export').addEventListener('click',()=>{
  if(snapshot[0])$('refreshed').textContent='Last successful load: '+new Date(snapshot[0].refreshed_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/La_Paz'});
  if(!periods.length)throw new Error('The first data load is not yet available.');
  $('period').replaceChildren(...periods.map(p=>option(p.date_key,new Date(p.year,p.month-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}))));
+ comparePeriod.replaceChildren(...periods.map(p=>option(p.date_key,new Date(p.year,p.month-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'}))));if(comparePeriod.options.length)comparePeriod.options[0].selected=true;
  $('period').disabled=false;$('coverage').textContent='2025 full year / 2026 through '+new Date(periods[0].year,periods[0].month-1,1).toLocaleDateString('en-US',{month:'long'});
  await findRoutes();
 }catch(e){status(e.message,true);}})();
+
+/* Independent multi-period / multi-route explorer. The original single-route explorer remains unchanged. */
+const comparePeriod=$('compare-periods'),compareRoutes=$('compare-routes');
+function compareSelected(el){return [...el.selectedOptions].map(o=>o.value);}
+function addCompareRoutes(rows){
+ const selected=new Set(compareSelected(compareRoutes));
+ const existing=new Set([...compareRoutes.options].map(o=>o.value));
+ rows.forEach(r=>{if(!existing.has(r.route_key)){compareRoutes.add(option(r.route_key,r.route_label));existing.add(r.route_key);}});
+ [...compareRoutes.options].forEach(o=>o.selected=selected.has(o.value));
+ if(!selected.size&&compareRoutes.options.length)compareRoutes.options[0].selected=true;
+}
+function compareMessage(msg,err=false){$('compare-status').textContent=msg;$('compare-status').className=err?'error':'';}
+async function runComparison(){
+ const months=compareSelected(comparePeriod),keys=compareSelected(compareRoutes);
+ if(!months.length||!keys.length){compareMessage('Select at least one departure month and one directional route.',true);return;}
+ if(months.length>12||keys.length>5){compareMessage('Limit comparisons to 12 months and 5 routes at a time.',true);return;}
+ $('compare-run').disabled=true;$('compare-results').hidden=true;compareMessage('Loading selected departure-month observations…');
+ try{
+  const monthFilter='in.('+months.join(',')+')';
+  const data=await Promise.all(keys.map(async key=>{
+   const [monthly,airlines]=await Promise.all([
+    api('aviation_routes',{select:'date_key,route_key,route_label,passengers,seats,departures',date_key:monthFilter,route_key:'eq.'+key,order:'date_key.asc',limit:'100'}),
+    api('aviation_market_share',{select:'date_key,route_key,airline_code,airline_name,passengers',date_key:monthFilter,route_key:'eq.'+key,limit:'1000'})
+   ]);
+   if(airlines.length===1000)throw new Error('Comparison reached the reporting API row limit. Reduce the selected months.');
+   return {key,monthly,airlines};
+  }));
+  const sums=data.map(d=>{
+   const total=(k)=>d.monthly.reduce((n,r)=>n+Number(r[k]||0),0);
+   return {...d,pax:total('passengers'),seats:total('seats'),departures:total('departures'),label:d.monthly[0]?.route_label||[...compareRoutes.options].find(o=>o.value===d.key)?.textContent||d.key};
+  });
+  $('compare-summary').innerHTML=sums.map(d=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+fmt(d.pax)+'</td><td>'+fmt(d.seats)+'</td><td>'+fmt(d.departures)+'</td><td>'+(d.seats?pct(d.pax/d.seats):'N/A')+'</td><td>'+d.monthly.length+'</td></tr>').join('');
+  const monthSorted=[...months].sort();
+  $('compare-trend').innerHTML='<table><thead><tr><th>Departure month</th>'+sums.map(d=>'<th>'+escapeHtml(d.label)+'</th>').join('')+'</tr></thead><tbody>'+monthSorted.map(m=>'<tr><td>'+m.slice(0,4)+'-'+m.slice(4,6)+'</td>'+sums.map(d=>'<td>'+fmt(d.monthly.find(r=>String(r.date_key)===m)?.passengers||0)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  $('compare-airlines').innerHTML=sums.flatMap(d=>{
+   const byAirline=new Map();
+   d.airlines.forEach(r=>{const k=r.airline_code;const prev=byAirline.get(k)||{name:r.airline_name,pax:0};prev.pax+=Number(r.passengers||0);byAirline.set(k,prev);});
+   return [...byAirline.entries()].sort((x,y)=>y[1].pax-x[1].pax).map(([code,v])=>'<tr><td>'+escapeHtml(d.label)+'</td><td>'+escapeHtml(code)+' · '+escapeHtml(v.name)+'</td><td>'+fmt(v.pax)+'</td><td>'+(d.pax?pct(v.pax/d.pax):'N/A')+'</td></tr>');
+  }).join('');
+  $('compare-results').hidden=false;
+  compareMessage('Comparing '+keys.length+' directional route(s) across '+months.length+' selected departure month(s). Missing route-months are shown as zero in the trend; they are not inferred bookings.');
+ }catch(e){compareMessage(e.message,true);}finally{$('compare-run').disabled=false;}
+}
+$('compare-run').addEventListener('click',runComparison);
