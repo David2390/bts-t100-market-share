@@ -57,6 +57,6 @@ The initial raw CSV content totals approximately 212 MB; the corresponding bronz
 - GitHub Actions runs Mondays at 10:17 UTC / 06:17 Bolivia time, plus manual dispatch. `REFRESH_ENABLED=true` activates the job.
 - `DATABASE_URL` belongs in GitHub Actions Secrets, never source code. The dedicated `aviation_loader` login has access only to this project's reporting schema.
 - The entire database load is transactional. Failed loads preserve the previously published data. Refreshes do not require redeploying the dashboard.
-- GitHub Actions also retains compressed Parquet artifacts for 30 days. Initial Supabase Storage upload is complete; unattended bucket updates require storage credentials to be configured.
+- GitHub Actions also retains compressed Parquet artifacts for 30 days. The workflow uploads a versioned private Supabase Storage snapshot before updating the report, retaining the current and previous snapshots. Storage credentials are held in the SUPABASE_S3_ACCESS_KEY_ID and SUPABASE_S3_SECRET_ACCESS_KEY Actions secrets.
 
 See [architecture and operations](docs/architecture.md) and the [data source](docs/data-source.md).

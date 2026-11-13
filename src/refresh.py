@@ -3,10 +3,12 @@ from pathlib import Path
 from download_bts import download
 from build_model import build
 from load_model import load
+from upload_parquet import upload
 import os
 
 if __name__=='__main__':
     root=Path(__file__).resolve().parents[1]
     for year in (2025,2026): download(root,year)
     build(root)
+    upload(root)
     load(root,os.environ['DATABASE_URL'])

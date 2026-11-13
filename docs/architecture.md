@@ -20,10 +20,10 @@ The dedicated aviation_loader login has SELECT/INSERT/UPDATE/DELETE grants and m
 ## Refresh
 .github/workflows/refresh.yml runs Mondays at 10:17 UTC (06:17 America/La_Paz) and supports manual dispatch. Set repository variable REFRESH_ENABLED=true after configuring secrets. GitHub may delay scheduled execution, and may disable inactive public-repository schedules. The workflow re-downloads both years so source revisions are captured. Published 2026 months must be contiguous from January; it does not assume the calendar month has been released.
 
-GitHub Actions retains the Parquet dataset and quality report as 30-day artifacts. Supabase bucket uploads are initially complete; unattended storage synchronization is being configured separately from relational loading.
+GitHub Actions retains the Parquet dataset and quality report as 30-day artifacts. The workflow stores a versioned snapshot in the private Supabase bucket before database loading. It retains two snapshots to limit storage growth; the initial root-level files are retained. S3 credentials bypass storage RLS and can access every bucket in this dedicated aviation project, so they stay only in encrypted GitHub Actions secrets.
 
 ## Dashboard
-The buildless dashboard reads the latest reporting views at request time with cache:no-store. Its client key is a publishable Supabase key, not a database or service-role secret. A data refresh therefore requires no Vercel rebuild. Source-code pushes deploy through the Vercel Git integration. The dashboard reports monthly market shares, avoiding misleading comparisons of full-year 2025 with partial-year 2026.
+The buildless dashboard reads the latest reporting views at request time with cache:no-store. Its client key is a publishable Supabase key, not a database or service-role secret. A data refresh therefore requires no Vercel rebuild. The initial Vercel deployment uses an upload of the dashboard folder because the account is not yet linked to GitHub. All source remains maintained in GitHub. The dashboard reports monthly market shares, avoiding misleading comparisons of full-year 2025 with partial-year 2026.
 
 ## Recovery
 If downloading, validation or loading fails, inspect the GitHub Actions run and retain the last valid report. Do not substitute synthetic data. The initial source checksums and row counts are in reports/data-quality.json. Rebuild from original exports to reproduce the measures.

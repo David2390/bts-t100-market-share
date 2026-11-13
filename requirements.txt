@@ -1,3 +1,4 @@
 pandas==3.0.2
 pyarrow==26.0.1
 psycopg[binary]==3.3.9
+boto3==1.44.2

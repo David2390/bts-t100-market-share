@@ -19,11 +19,17 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-      - run: python -m pip install -r requirements.txt
+          cache-dependency-path: requirements.lock.txt
+      - run: python -m pip install -r requirements.lock.txt
       - name: Download published 2025 and 2026 exports
         run: python src/download_bts.py
       - name: Validate and transform to Parquet and star schema
         run: python src/build_model.py
+      - name: Store versioned Parquet in private Supabase Storage
+        env:
+          SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+          SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+        run: python src/upload_parquet.py
       - name: Publish validated reporting model atomically
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

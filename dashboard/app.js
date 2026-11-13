@@ -69,7 +69,8 @@ $('export').addEventListener('click',()=>{
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='flightpath-'+$('route').value+'-'+$('period').value+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 (async()=>{try{
- const periods=await api('aviation_periods',{select:'*',order:'date_key.desc'});
+ const [periods,snapshot]=await Promise.all([api('aviation_periods',{select:'*',order:'date_key.desc'}),api('aviation_status',{select:'refreshed_at'})]);
+ if(snapshot[0])$('refreshed').textContent='Last successful load: '+new Date(snapshot[0].refreshed_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/La_Paz'});
  if(!periods.length)throw new Error('The first data load is not yet available.');
  $('period').replaceChildren(...periods.map(p=>option(p.date_key,new Date(p.year,p.month-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}))));
  $('period').disabled=false;$('coverage').textContent='2025 full year / 2026 through '+new Date(periods[0].year,periods[0].month-1,1).toLocaleDateString('en-US',{month:'long'});
